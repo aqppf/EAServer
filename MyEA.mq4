@@ -9,11 +9,19 @@
 #property strict
 
 #import "EAServer.dll"
-double GetDoubleValue(double);
+double SendTickData(double &arr[]);
+void SendInitData(double &arr[], int, int);
 #import
 
 int OnInit()
 {
+   double data[2];
+   while(true) {
+      data[0] = Bid;
+      data[1] = Bars;
+      Print("Returned value is ", SendTickData(data));
+      Sleep(1000);
+   }
    return(INIT_SUCCEEDED);
 }
 void OnDeinit(const int reason)
@@ -21,5 +29,5 @@ void OnDeinit(const int reason)
 }
 void OnTick()
 {
-   Print("Returned value is ", GetDoubleValue(Bid));
+   Print("Returned value is ");
 }
