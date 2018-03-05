@@ -16,12 +16,11 @@ double SendTickData(double &arr[]);
 int OnInit()
 {  
    MqlRates rates[];
-   int res = ArrayCopyRates(rates, NULL, PERIOD_M30);
+   int res = ArrayCopyRates(rates);
    if (res == -1) MessageBox("copy PERIOD_M30 err");
-   double aaa = SendInitData(rates,Bars,PERIOD_M30);
-   
-   Print("test", SendInitData(rates,0,0));
-   
+   SendInitData(rates,Bars,PERIOD_M30);
+   SendInitData(rates,Bars-1,PERIOD_M30);
+   SendInitData(rates,Bars-2,PERIOD_M30);
    return(INIT_SUCCEEDED);
 }
 void OnDeinit(const int reason)
