@@ -9,19 +9,19 @@
 #property strict
 
 #import "EAServer.dll"
+double SendInitData(MqlRates &rates[],int,int);
 double SendTickData(double &arr[]);
-void SendInitData(double &arr[], int, int);
 #import
 
 int OnInit()
-{
-   double data[2];
-   while(true) {
-      data[0] = Bid;
-      data[1] = Bars;
-      Print("Returned value is ", SendTickData(data));
-      Sleep(1000);
-   }
+{  
+   MqlRates rates[];
+   int res = ArrayCopyRates(rates, NULL, PERIOD_M30);
+   if (res == -1) MessageBox("copy PERIOD_M30 err");
+   double aaa = SendInitData(rates,Bars,PERIOD_M30);
+   
+   Print("test", SendInitData(rates,0,0));
+   
    return(INIT_SUCCEEDED);
 }
 void OnDeinit(const int reason)
@@ -29,5 +29,9 @@ void OnDeinit(const int reason)
 }
 void OnTick()
 {
-   Print("Returned value is ");
+   double data[2];
+   data[0] = Bid;
+   data[1] = Volume[0];
+   
+   Print("Returned value is ", SendTickData(data));
 }
