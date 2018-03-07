@@ -13,50 +13,62 @@ double SendInitData(MqlRates &rates[],int,int);
 double SendTickData(double &arr[]);
 #import
 
-int OnInit()
-{  
+int cur_bars[7];
+int order_period[7] = {PERIOD_M1,PERIOD_M5,PERIOD_M15,PERIOD_M30,PERIOD_H1,PERIOD_H4,PERIOD_D1};
+
+void copy(int period)
+{
    MqlRates rates[];
    int bars;
 
-   bars = ArrayCopyRates(rates, NULL, PERIOD_M1);
-   if (bars == -1) MessageBox("copy m1 error");
-   SendInitData(rates, bars, PERIOD_M1);
+   bars = ArrayCopyRates(rates, NULL, period);
+   if (bars == -1) {
+      MessageBox("copy rates error");
+      return;
+   }
+   SendInitData(rates, bars, period);
 
-   bars = ArrayCopyRates(rates, NULL, PERIOD_M5);
-   if (bars == -1) MessageBox("copy m5 error");
-   SendInitData(rates, bars, PERIOD_M5);
+   for (int i = 0; i < 7; ++i) {
+      if (period == order_period[i]) cur_bars[i] = bars;
+   }
+}
 
-   bars = ArrayCopyRates(rates, NULL, PERIOD_M15);
-   if (bars == -1) MessageBox("copy m15 error");
-   SendInitData(rates, bars, PERIOD_M15);
-
-   bars = ArrayCopyRates(rates, NULL, PERIOD_M30);
-   if (bars == -1) MessageBox("copy m30 error");
-   SendInitData(rates, bars, PERIOD_M30);
-
-   bars = ArrayCopyRates(rates, NULL, PERIOD_H1);
-   if (bars == -1) MessageBox("copy h1 error");
-   SendInitData(rates, bars, PERIOD_H1);
-
-   bars = ArrayCopyRates(rates, NULL, PERIOD_H4);
-   if (bars == -1) MessageBox("copy h4 error");
-   SendInitData(rates, bars, PERIOD_H4);
-
-   bars = ArrayCopyRates(rates, NULL, PERIOD_D1);
-   if (bars == -1) MessageBox("copy d1 error");
-   SendInitData(rates, bars, PERIOD_D1);
-
+int OnInit()
+{  
+   copy(PERIOD_M1);
+   copy(PERIOD_M5);
+   copy(PERIOD_M15);
+   copy(PERIOD_M30);
+   copy(PERIOD_H1);
+   copy(PERIOD_H4);
+   copy(PERIOD_D1);
 
    return(INIT_SUCCEEDED);
 }
 void OnDeinit(const int reason)
 {
+   //todo
 }
 void OnTick()
 {
    double data[2];
    data[0] = Bid;
-   data[1] = Volume[0];
+   data[1] = (double)Volume[0];
    
-   Print("Returned value is ", SendTickData(data));
+   Print("Returned value is ", SendTickData(data)); // 打印并计算
+
+   int bars = 0;
+   MqlRates rates[];
+
+   for (int i=0; i<7; i++) {
+      bars = iBars(NULL, order_period[i]);
+      if (cur_bars[i] >= bars) continue;
+      bars = ArrayCopyRates(rates, NULL, order_period[i]);
+      if (bars == -1) {
+         MessageBox("copy rates error");
+         return;
+      }
+      cur_bars[i] = bars;
+      SendInitData(rates, bars, order_period[i]);
+   }
 }

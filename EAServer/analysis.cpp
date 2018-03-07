@@ -1,14 +1,13 @@
 
 
 #include "stdafx.h"
-#include <atlstr.h>
 
-void test() 
+void tick(double *data) 
 {
 	CString cstr;
 
-	cstr.Format(_T("test okokok %f"), rates_m15.mqlRates[rates_m15.bars-1].high);
+	cstr.Format(_T("hight:%f,bars:%d"), rates_m1.mqlRates[rates_m1.bars-1].high,
+		rates_m1.bars);
 	
-
-	MessageBox(0, cstr, 0, 0);
+	PrintString(cstr);
 }
