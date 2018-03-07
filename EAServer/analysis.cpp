@@ -2,8 +2,7 @@
 
 #include "stdafx.h"
 
-
-
+#pragma comment(lib, "winmm.lib")
 
 double forecast_for_rate(MqlRates rate)
 {
@@ -27,7 +26,11 @@ double forecast_for_rate(MqlRates rate)
 
 double volume_analysis(double *data) 
 {
-	//todo
+	CString cs;
+
+	cs.Format(_T("time is :::%d,³É½»£º%.1f"), timeGetTime(), data[1]);
+
+	PrintString(cs);
 
 	return 100;
 }
@@ -45,9 +48,9 @@ int tick(double *data)
 	
 	PrintString(cstr);
 
-	long aa = forecast_for_rate(rate);
+	double aa = forecast_for_rate(rate);
 
 	aa = volume_analysis(data);
 
-	return aa;
+	return (int)aa;
 }
