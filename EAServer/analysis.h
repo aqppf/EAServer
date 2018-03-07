@@ -1,3 +1,3 @@
 #pragma once
 
-void tick(double *data);
+int tick(double *data);
