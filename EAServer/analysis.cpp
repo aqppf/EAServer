@@ -4,13 +4,13 @@
 
 #pragma comment(lib, "winmm.lib")
 
-double forecast_for_rate(MqlRates rate)
+double forecast_for_rate(MqlRates *rates, int shift)
 {
-	double dir = rate.open - rate.close;
+	double dir = rates[shift].open - rates[shift].close;
 
 	if (dir > 0) 
 	{
-		//todo
+		
 	}
 	else if (dir < 0) 
 	{
@@ -44,13 +44,13 @@ int tick(double *data)
 
 	MqlRates rate = rates_m1.mqlRates[rates_m1.bars-1];
 
-	cstr.Format(_T("hight:%f,bars:%d"), rate.high, rates_m1.bars);
+	cstr.Format(_T("price:%.5f,bars:%d"), rate.high, rates_m1.bars);
 	
 	PrintString(cstr);
 
-	double aa = forecast_for_rate(rate);
+	double aa = forecast_for_rate(rates_m1.mqlRates, rates_m1.bars-1);
 
 	aa = volume_analysis(data);
 
-	return (int)aa;
+	return (int)(aa*10);
 }
