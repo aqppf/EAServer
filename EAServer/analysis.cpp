@@ -1,56 +1,97 @@
 
 
 #include "stdafx.h"
+#include "analysis.h"
+#include <time.h>
 
 #pragma comment(lib, "winmm.lib")
 
-double forecast_for_rate(MqlRates *rates, int shift)
+struct Last
 {
-	double dir = rates[shift].open - rates[shift].close;
+	unsigned long move_time;
+	int           volume;
+	double        price;
+	double        power;
+};
 
-	if (dir > 0) 
-	{
-		
-	}
-	else if (dir < 0) 
-	{
-		//todo
-	}
-	else 
-	{
-		//todo
-	}
+const int thread_num = 1000;
 
-	return dir;
-}
+HANDLE handle[thread_num];
+DWORD ThreadIdx[thread_num];
+Last last[thread_num][2000];
+double *data;
 
-double volume_analysis(double *data) 
+DWORD WINAPI AnalysisThread(LPVOID lpParameter)
 {
-	CString cs;
+LoopRun:
 
-	cs.Format(_T("time is :::%d,成交：%.1f"), timeGetTime(), data[1]);
+	CString cs; 
+	
+	int idx = GetIndex(GetCurrentThreadId());
 
+	cs.Format(_T("线程::::::::%d"), idx);
 	PrintString(cs);
 
-	return 100;
+	// 分析代码正式开始
+
+	Last *plast = new Last;
+	plast->move_time = timeGetTime();
+	plast->price = data[0];
+	plast->volume = (int)data[1];
+	plast->power = 0;
+
+	double volume = data[1] - plast->volume < 0 ? data[1] : data[1] - plast->volume;
+
+	double diff_price = data[0] - plast->price;
+
+	double power1 = reverse_operation_a(timeGetTime() - plast->move_time, ladder * step1);
+
+	double power2 = positive_operation_a(diff_price, ladder * step2);
+
+	double power3 = positive_operation_a(volume, ladder * step3);
+
+	double power = sum_all(3, power1, power2, power3);
+
+	bool result = false;
+
+	if ((diff_price > 0 && power > 0) || (diff_price < 0 && power < 0)) result = true;
+
+	SuspendThread(NULL);
+
+	goto LoopRun;
+
+	return power;
 }
 
 /***
  *  mqlRates数组索引越大数据越新
 ***/
-int tick(double *data)
+int tick(double *tick)
 {
-	CString cstr;
+	data = tick;
 
-	MqlRates rate = rates_m1.mqlRates[rates_m1.bars-1];
+	// 唤醒所有线程
+	for (int i = 0; i < thread_num; i++) {
+		ResumeThread(handle[i]);
+	}
 
-	cstr.Format(_T("price:%.5f,bars:%d"), rate.high, rates_m1.bars);
-	
-	PrintString(cstr);
+	return 10;
+}
 
-	double aa = forecast_for_rate(rates_m1.mqlRates, rates_m1.bars-1);
+void InitAnalysisThread() 
+{
+	DWORD thread_id = 0;
+	for (int i = 0; i < thread_num; i++) {
+		handle[i] = CreateThread(0, 0, AnalysisThread, NULL, CREATE_SUSPENDED, &thread_id);
+		ThreadIdx[i] = thread_id;
+	}
+}
 
-	aa = volume_analysis(data);
-
-	return (int)(aa*10);
+int GetIndex(unsigned long thread_id) 
+{
+	int i;
+	for (i = 0; i < thread_num; i++) {
+		if (ThreadIdx[i] == thread_id) return i;
+	}
+	return i;
 }
