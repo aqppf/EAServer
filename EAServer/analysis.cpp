@@ -14,12 +14,13 @@ struct Last
 	double        power;
 };
 
-const int thread_num = 1000;
+const int thread_num = 4;
 
 HANDLE handle[thread_num];
 DWORD ThreadIdx[thread_num];
 Last last[thread_num][2000];
 double *data;
+Last *plast = new Last;
 
 DWORD WINAPI AnalysisThread(LPVOID lpParameter)
 {
@@ -33,13 +34,6 @@ LoopRun:
 	PrintString(cs);
 
 	// 分析代码正式开始
-
-	Last *plast = new Last;
-	plast->move_time = timeGetTime();
-	plast->price = data[0];
-	plast->volume = (int)data[1];
-	plast->power = 0;
-
 	double volume = data[1] - plast->volume < 0 ? data[1] : data[1] - plast->volume;
 
 	double diff_price = data[0] - plast->price;
@@ -69,6 +63,10 @@ LoopRun:
 int tick(double *tick)
 {
 	data = tick;
+
+	plast->move_time = timeGetTime();
+	plast->price = data[0];
+	plast->volume = (int)data[1];
 
 	// 唤醒所有线程
 	for (int i = 0; i < thread_num; i++) {
