@@ -6,21 +6,21 @@
 
 #pragma comment(lib, "winmm.lib")
 
-struct Last
+struct DealData
 {
-	unsigned long move_time;
-	int           volume;
-	double        price;
-	double        power;
+	unsigned long move_time = 0;
+	int           volume = 0;
+	double        price = 0;
 };
 
-const int thread_num = 4;
+const int thread_num = 5000;
+
+DealData last_deal, cur_deal;
 
 HANDLE handle[thread_num];
 DWORD ThreadIdx[thread_num];
-Last last[thread_num][2000];
-double *data;
-Last *plast = new Last;
+double profit[thread_num][2000]; // 存储每个线程的分析结果
+
 
 DWORD WINAPI AnalysisThread(LPVOID lpParameter)
 {
@@ -30,19 +30,19 @@ LoopRun:
 	
 	int idx = GetIndex(GetCurrentThreadId());
 
-	cs.Format(_T("线程::::::::%d"), idx);
+	cs.Format(_T("线程:::::::%d"), idx);
 	PrintString(cs);
 
 	// 分析代码正式开始
-	double volume = data[1] - plast->volume < 0 ? data[1] : data[1] - plast->volume;
+	int diff_volume = cur_deal.volume - last_deal.volume; diff_volume = diff_volume > 0 ? diff_volume : cur_deal.volume;
 
-	double diff_price = data[0] - plast->price;
+	double diff_price = cur_deal.price - last_deal.price;
 
-	double power1 = reverse_operation_a(timeGetTime() - plast->move_time, ladder * step1);
+	double power1 = reverse_operation_a(cur_deal.move_time - last_deal.move_time, ladder * step1);
 
 	double power2 = positive_operation_a(diff_price, ladder * step2);
 
-	double power3 = positive_operation_a(volume, ladder * step3);
+	double power3 = positive_operation_a(diff_volume, ladder * step3);
 
 	double power = sum_all(3, power1, power2, power3);
 
@@ -50,7 +50,7 @@ LoopRun:
 
 	if ((diff_price > 0 && power > 0) || (diff_price < 0 && power < 0)) result = true;
 
-	SuspendThread(NULL);
+	SuspendThread(handle[idx]);
 
 	goto LoopRun;
 
@@ -60,13 +60,24 @@ LoopRun:
 /***
  *  mqlRates数组索引越大数据越新
 ***/
-int tick(double *tick)
+int tick(double *data)
 {
-	data = tick;
+	if (last_deal.move_time == 0 && last_deal.volume == 0) { // 第一次调用
 
-	plast->move_time = timeGetTime();
-	plast->price = data[0];
-	plast->volume = (int)data[1];
+		last_deal.move_time = timeGetTime();
+		last_deal.price = data[0];
+		last_deal.volume = (int)data[1];
+
+		cur_deal = last_deal;
+
+		return 0;
+	}
+
+	last_deal = cur_deal;
+
+	cur_deal.move_time = timeGetTime();
+	cur_deal.price = data[0];
+	cur_deal.volume = (int)data[1];
 
 	// 唤醒所有线程
 	for (int i = 0; i < thread_num; i++) {
