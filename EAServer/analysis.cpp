@@ -13,27 +13,22 @@ struct DealData
 	double        price = 0;
 };
 
-const int thread_num = 5000;
+const int thread_num = 20000;
+const int data_len = 2000;
 
 DealData last_deal, cur_deal;
 
 HANDLE handle[thread_num];
 DWORD ThreadIdx[thread_num];
-double profit[thread_num][2000]; // 存储每个线程的分析结果
-
+double profit[thread_num][data_len]; // 存储每个线程的分析结果
+int increased[thread_num]; //每个线程存取数据的位置
 
 DWORD WINAPI AnalysisThread(LPVOID lpParameter)
 {
 LoopRun:
 
-	CString cs; 
-	
 	int idx = GetIndex(GetCurrentThreadId());
 
-	cs.Format(_T("线程:::::::%d"), idx);
-	PrintString(cs);
-
-	// 分析代码正式开始
 	int diff_volume = cur_deal.volume - last_deal.volume; diff_volume = diff_volume > 0 ? diff_volume : cur_deal.volume;
 
 	double diff_price = cur_deal.price - last_deal.price;
@@ -46,10 +41,12 @@ LoopRun:
 
 	double power = sum_all(3, power1, power2, power3);
 
-	bool result = false;
+	if (increased[idx] < data_len) {
+		profit[idx][increased[idx]++] = power;
+	} else {
 
-	if ((diff_price > 0 && power > 0) || (diff_price < 0 && power < 0)) result = true;
-
+	}
+		
 	SuspendThread(handle[idx]);
 
 	goto LoopRun;
