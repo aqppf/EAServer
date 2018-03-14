@@ -6,6 +6,10 @@
 
 #pragma comment(lib, "winmm.lib")
 
+/***
+ *  基本公式 diff_price * diff_time * diff_volume
+***/
+
 struct DealData
 {
 	unsigned long move_time = 0;
@@ -13,40 +17,74 @@ struct DealData
 	double        price = 0;
 };
 
+struct Modulus
+{
+	DWORD ratio1;
+	DWORD ratio2;
+};
+
+struct Profit
+{
+	double power;
+	double price;
+	double average; //长度为num的平均值
+	int num;
+};
+
 const int thread_num = 20000;
-const int data_len = 2000;
+const int data_len = 100;
 
 DealData last_deal, cur_deal;
 
 HANDLE handle[thread_num];
 DWORD ThreadIdx[thread_num];
-double profit[thread_num][data_len]; // 存储每个线程的分析结果
+
+Modulus modulus[thread_num];
+
+Profit profit[thread_num][data_len]; // 存储每个线程的分析结果
 int increased[thread_num]; //每个线程存取数据的位置
 
 DWORD WINAPI AnalysisThread(LPVOID lpParameter)
 {
 LoopRun:
 
-	int idx = GetIndex(GetCurrentThreadId());
+	int earliest, idx, diff_volume;
+	double total = 0 , diff_price, time, volume, power;
 
-	int diff_volume = cur_deal.volume - last_deal.volume; diff_volume = diff_volume > 0 ? diff_volume : cur_deal.volume;
+	idx = GetIndex(GetCurrentThreadId());
 
-	double diff_price = cur_deal.price - last_deal.price;
+	diff_volume = cur_deal.volume - last_deal.volume; diff_volume = diff_volume > 0 ? diff_volume : cur_deal.volume;
 
-	double power1 = reverse_operation_a(cur_deal.move_time - last_deal.move_time, ladder * step1);
+	diff_price = cur_deal.price - last_deal.price;
 
-	double power2 = positive_operation_a(diff_price, ladder * step2);
+	time = reverse_operation_a(cur_deal.move_time - last_deal.move_time, modulus[idx].ratio1);
 
-	double power3 = positive_operation_a(diff_volume, ladder * step3);
+	volume = positive_operation_a(diff_volume, modulus[idx].ratio2);
 
-	double power = sum_all(3, power1, power2, power3);
+	power = multiply_all(3, diff_price, time, volume);
 
 	if (increased[idx] < data_len) {
-		profit[idx][increased[idx]++] = power;
-	} else {
-
+		profit[idx][increased[idx]++].price = cur_deal.price;
+		profit[idx][increased[idx]++].power = power;
+		goto Suspend;
 	}
-		
+
+	earliest = increased[idx]++ - data_len;
+
+	if (increased[idx] >= 2 * data_len) increased[idx] -= data_len;
+
+	profit[idx][earliest].power = power;
+	profit[idx][earliest].price = cur_deal.price;
+
+	//计算平均值
+	for (size_t i = 0; i < data_len; i++)
+	{
+		total += profit[idx][i].power;
+	}
+
+	profit[idx][earliest].average = total / data_len;
+
+Suspend:
 	SuspendThread(handle[idx]);
 
 	goto LoopRun;
@@ -90,6 +128,10 @@ void InitAnalysisThread()
 	for (int i = 0; i < thread_num; i++) {
 		handle[i] = CreateThread(0, 0, AnalysisThread, NULL, CREATE_SUSPENDED, &thread_id);
 		ThreadIdx[i] = thread_id;
+
+		//初始化每个线程的计算系数
+		modulus[i].ratio1 = GetLadder() * GetStep1();
+		modulus[i].ratio2 = GetLadder() * GetStep2();
 	}
 }
 
