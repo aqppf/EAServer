@@ -19,8 +19,8 @@ struct DealData
 
 struct Modulus
 {
-	DWORD ratio1;
-	DWORD ratio2;
+	double ratio1;
+	double ratio2;
 };
 
 struct Profit
@@ -31,8 +31,8 @@ struct Profit
 	int num;
 };
 
-const int thread_num = 20000;
-const int data_len = 100;
+const int thread_num = 2000;
+const int data_len = 1000;
 
 DealData last_deal, cur_deal;
 
@@ -124,14 +124,22 @@ int tick(double *data)
 
 void InitAnalysisThread() 
 {
+	CString cs;
+
 	DWORD thread_id = 0;
 	for (int i = 0; i < thread_num; i++) {
 		handle[i] = CreateThread(0, 0, AnalysisThread, NULL, CREATE_SUSPENDED, &thread_id);
 		ThreadIdx[i] = thread_id;
 
 		//初始化每个线程的计算系数
-		modulus[i].ratio1 = GetLadder() * GetStep1();
-		modulus[i].ratio2 = GetLadder() * GetStep2();
+		modulus[i].ratio1 = GetStep1() * GetLadder();
+		modulus[i].ratio2 = GetStep1() * GetLadder();
+
+		cs.Format(_T("init id::%d, step1::%.20f, step2::%.20f"), i, 
+			modulus[i].ratio1, 
+			modulus[i].ratio2);
+
+		PrintString(cs);
 	}
 }
 
