@@ -28,16 +28,28 @@ void OnInit()
 
 	double margin = AccountFreeMargin();
 
-	double many = MathFloor(margin / one_lot);
-
-	int isBuy = isBuy > 0 ? OP_BUY : OP_SELL;
-
-	for (int i = 0; i < many; i += 20) {
-
-		int lots = i <= many ? 20 : (many - 20*i);
-
-		int ticket = OrderSend(symbol,isBuy,20,Ask,5,0,0);
+	int many = MathFloor(margin / one_lot);
 	
+	int ticket = 0;
+
+	for (int i = 0; i < many / 20; i++) {
+
+		if (isBuy > 0)
+		   ticket = OrderSend(symbol,OP_BUY,20,Ask,5,0,0);
+		else
+	      ticket = OrderSend(symbol,OP_SELL,20,Bid,5,0,0);
+	      
 		if(ticket<0) Print("OrderSend 失败错误 #",GetLastError());
 	}
+	
+	if (many % 20 == 0)  return;
+	
+	if (isBuy > 0)
+		ticket = OrderSend(symbol,OP_BUY,many % 20,Ask,5,0,0);
+	else
+	   ticket = OrderSend(symbol,OP_SELL,many % 20,Bid,5,0,0);
+	   
+	if(ticket<0) Print("OrderSend 失败错误 #",GetLastError());
+	
+	
 }
