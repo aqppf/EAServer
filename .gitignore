@@ -1,3 +1,5 @@
 /EAServer/Debug
 /.vs
 /Debug
+/EAServer/EAServer.vcxproj.filters
+/EAServer/EAServer.vcxproj
